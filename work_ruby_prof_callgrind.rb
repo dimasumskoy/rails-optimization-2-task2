@@ -1,11 +1,12 @@
+require 'ruby-prof'
 require_relative 'work'
 
-RubyProf.measure_mode = RubyProf::WALL_TIME
+RubyProf.measure_mode = RubyProf::MEMORY
 
 result = RubyProf.profile do
   GC.disable
-  Work.new(file: 'data_large.txt').perform
+  Work.new(file: 'test_data.txt').perform
 end
 
-printer4 = RubyProf::CallTreePrinter.new(result)
-printer4.print(:path => "ruby_prof_reports", :profile => 'callgrind')
+printer = RubyProf::CallTreePrinter.new(result)
+printer.print(path: 'reports', profile: 'callgrind')

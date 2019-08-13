@@ -53,3 +53,15 @@
 
 ## Защита от регрессии производительности
 Для защиты от потери достигнутого прогресса при дальнейших изменениях программы *о performance-тестах, которые вы написали*
+
+
+### Optimization process
+
+Metrics:
+file: test_data.txt (500_000 lines)
+time: 3,8s
+memory on start: 23 MB
+memory on finish: 553 MB
+
+
+

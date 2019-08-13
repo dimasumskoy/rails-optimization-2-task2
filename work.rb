@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'json'
 require 'pry'
 require 'date'
@@ -53,17 +55,18 @@ class Work
       browsers_string    = browsers.sort.join(', ')
       user_sessions_time = user.sessions.map { |s| s[:time].to_i }
 
-      @report[:usersStats][user_key] = users_stats.merge({
+      @report[:usersStats][user_key] = users_stats.merge(
         sessionsCount: user.sessions.count,
         totalTime: "#{user_sessions_time.sum} min.",
         longestSession: "#{user_sessions_time.max} min.",
         browsers: browsers_string,
         usedIE: browsers.any? { |b| b.include?('INTERNET EXPLORER') },
         alwaysUsedChrome: browsers.all? { |b| b.include?('CHROME') },
-        dates: user.sessions.map {|s| s[:date] }.sort.reverse
-      })
+        dates: user.sessions.map { |s| s[:date] }.sort.reverse
+      )
     end
 
+    # GC.start(full_mark: true, immediate_sweep: true)
     File.write('result.json', "#{@report.to_json}\n")
   end
 
