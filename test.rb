@@ -1,8 +1,5 @@
+require_relative 'profilers'
 require 'open3'
-
-require_relative 'memory_benchmark'
-require_relative 'memory_profiler'
-require_relative 'work_ruby_prof'
 
 puts 'Running tests'
 stdout = Open3.capture3('ruby minitest/test_me.rb')
@@ -13,11 +10,11 @@ run_benchmark
 puts 'Done'
 
 # puts 'Starting profiler'
-# run_profiler
+# run_memory_profiler
 # puts 'Done'
 
 puts 'Starting ruby-prof'
-run_ruby_prof
+run_ruby_prof_flat
 puts 'Done'
 
 puts 'Finish'

@@ -1,12 +1,3 @@
-require 'ruby-prof'
-require_relative 'work'
+require_relative 'profilers'
 
-RubyProf.measure_mode = RubyProf::MEMORY
-
-result = RubyProf.profile do
-  GC.disable
-  Work.new(file: 'test_data.txt').perform
-end
-
-printer = RubyProf::CallTreePrinter.new(result)
-printer.print(path: 'reports', profile: 'callgrind')
+run_ruby_prof_callgrind
