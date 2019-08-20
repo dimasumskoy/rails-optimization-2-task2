@@ -11,44 +11,63 @@ require 'ruby-prof'
 require_relative 'user'
 
 class Work
+  SUPPORT = {
+    user: 'user',
+    session: 'session',
+    semicolon: ',',
+    line_feed: "\n",
+    empty_string: '',
+    browsers: {
+      ie: 'INTERNET EXPLORER',
+      chrome: 'CHROME'
+    }
+  }.freeze
+
+  UNIQUE_BROWSERS = Set.new
+
   def initialize(file: nil)
     @file          = file
     @sessions      = []
     @users_objects = []
     @report        = {}
+
+    @report[:totalUsers] ||= 0
+    @report[:uniqueBrowsersCount] ||= 0
+    @report[:totalSessions] ||= 0
   end
 
   def perform
     return unless @file
 
-    parse_lines.each do |line|
-      fields = line.split(',')
+    File.readlines(@file).each do |line|
+      fields = line.tr!(SUPPORT[:line_feed], SUPPORT[:empty_string]).split(SUPPORT[:semicolon])
       object = fields[0]
 
-      if object == 'user'
-        @users_objects << create_user(fields)
-      elsif object == 'session'
-        session = create_session(fields)
-        @user.sessions << session if session[:user_id] == @user.id
-        @sessions << session
+      if object == SUPPORT[:user]
+        @user = User.new(attributes: parse_user(fields))
+        @users_objects << @user
+
+        @report[:totalUsers] += 1
+      elsif object == SUPPORT[:session]
+        @session = parse_session(fields)
+
+        unless UNIQUE_BROWSERS.include?(@session[:browser])
+          UNIQUE_BROWSERS << @session[:browser]
+          @report[:uniqueBrowsersCount] += 1
+        end
+
+        @user.sessions << @session if @session[:user_id] == @user.id
+        @sessions << @session
+
+        @report[:totalSessions] += 1
       end
     end
 
-    uniqueBrowsers = Set.new
-
-    @sessions.each do |session|
-      browser = session[:browser]
-      uniqueBrowsers << browser unless uniqueBrowsers.include?(browser)
-    end
-
-    @report[:totalUsers]          = @users_objects.count
-    @report[:uniqueBrowsersCount] = uniqueBrowsers.count
-    @report[:totalSessions]       = @sessions.count
-    @report[:allBrowsers]         = @sessions.map { |s| s[:browser].upcase }.sort.uniq.join(',')
-    @report[:usersStats]          = {}
+    @report[:allBrowsers] = @sessions.map { |s| s[:browser].upcase }.sort.uniq.join(',')
+    @report[:usersStats]  = {}
 
     @users_objects.each do |user|
-      user_key    = user.full_name
+      user_key    = "#{user.attributes[:first_name]} #{user.attributes[:last_name] }"
       users_stats = @report[:usersStats][user_key] || {}
 
       browsers           = user.sessions.map { |s| s[:browser].upcase }
@@ -60,8 +79,8 @@ class Work
         totalTime: "#{user_sessions_time.sum} min.",
         longestSession: "#{user_sessions_time.max} min.",
         browsers: browsers_string,
-        usedIE: browsers.any? { |b| b.include?('INTERNET EXPLORER') },
-        alwaysUsedChrome: browsers.all? { |b| b.include?('CHROME') },
+        usedIE: browsers.any? { |b| b.include?(SUPPORT[:browsers][:ie]) },
+        alwaysUsedChrome: browsers.all? { |b| b.include?(SUPPORT[:browsers][:chrome]) },
         dates: user.sessions.map { |s| s[:date] }.sort.reverse
       )
     end
@@ -72,24 +91,20 @@ class Work
 
   private
 
-  def parse_lines
-    File.read(@file).split("\n")
-  end
-
-  def create_user(fields)
-    @user = User.new(attributes: {
-      id: fields[1],
+  def parse_user(fields)
+    {
+      id: fields[1].to_i,
       first_name: fields[2],
       last_name: fields[3],
-      age: fields[4],
+      age: fields[4].to_i,
       sessions: []
-    })
+    }
   end
 
-  def create_session(fields)
+  def parse_session(fields)
     {
-      user_id: fields[1],
-      session_id: fields[2],
+      user_id: fields[1].to_i,
+      session_id: fields[2].to_i,
       browser: fields[3],
       time: fields[4],
       date: fields[5]
